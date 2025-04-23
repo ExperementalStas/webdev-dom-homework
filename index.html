@@ -48,14 +48,12 @@
         <input
           type="text"
           class="add-form-name"
-          placeholder="Введите ваше имя"
-        />
+          placeholder="Введите ваше имя" />
         <textarea
           type="textarea"
           class="add-form-text"
           placeholder="Введите ваш коментарий"
-          rows="4"
-        ></textarea>
+          rows="4"></textarea>
         <div class="add-form-row">
           <button class="add-form-button">Написать</button>
         </div>
@@ -63,10 +61,133 @@
     </div>
   </body>
 
-  <script>
+ <script>
     "use strict";
+  
+    const commentsList = document.querySelector('.comments');
+    const nameInput = document.querySelector('.add-form-name');
+    const textInput = document.querySelector('.add-form-text');
+    const addButton = document.querySelector('.add-form-button');
     
-    // Код писать здесь
-    console.log("It works!");
-  </script>
+    let comments = [
+        {
+            author: 'Глеб Фокин',
+            date: '12.02.22 12:18',
+            text: 'Это будет первый комментарий на этой странице',
+            likes: 3,
+            isLiked: false
+        },
+        {
+            author: 'Варвара Н.',
+            date: '13.02.22 19:22',
+            text: 'Мне нравится как оформлена эта страница! ❤',
+            likes: 75,
+            isLiked: true
+        }
+    ];
+    
+    let nameClickCount = 0;
+    let textClickCount = 0;
+    let buttonClickCount = 0;
+    let likeClickCount = 0;
+
+    function formatDate() {
+        const now = new Date();
+        return `${now.getDate().toString().padStart(2, '0')}.${(now.getMonth() + 1).toString().padStart(2, '0')}.${now.getFullYear().toString().slice(-2)} ${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    }
+    
+    function renderComments() {
+        commentsList.innerHTML = '';
+        
+        comments.forEach((comment, index) => {
+            const commentHTML = `
+                <li class="comment">
+                    <div class="comment-header">
+                        <div>${comment.author}</div>
+                        <div>${comment.date}</div>
+                    </div>
+                    <div class="comment-body">
+                        <div class="comment-text">
+                            ${comment.text}
+                        </div>
+                    </div>
+                    <div class="comment-footer">
+                        <div class="likes">
+                            <span class="likes-counter">${comment.likes}</span>
+                            <button class="like-button ${comment.isLiked ? '-active-like' : ''}" data-index="${index}"></button>
+                        </div>
+                    </div>
+                </li>
+            `;
+            commentsList.insertAdjacentHTML('beforeend', commentHTML);
+        });
+        
+        setupLikeHandlers();
+    }
+    
+    function setupLikeHandlers() {
+        document.querySelectorAll('.like-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const index = this.getAttribute('data-index');
+                likeClickCount++;
+                updateClickCounters();
+                
+                if (comments[index].isLiked) {
+                    comments[index].likes--;
+                    comments[index].isLiked = false;
+                } else {
+                    comments[index].likes++;
+                    comments[index].isLiked = true;
+                }
+                renderComments();
+            });
+        });
+    }
+    
+    function updateClickCounters() {
+        console.log(`Статистика кликов:
+        Поле "Имя": ${nameClickCount}
+        Поле "Комментарий": ${textClickCount}
+        Кнопка "Написать": ${buttonClickCount}
+        Лайки: ${likeClickCount}`);
+    }
+    
+    nameInput.addEventListener('click', function() {
+        nameClickCount++;
+        updateClickCounters();
+    });
+    
+    textInput.addEventListener('click', function() {
+        textClickCount++;
+        updateClickCounters();
+    });
+    
+    addButton.addEventListener("click", function() {
+        buttonClickCount++;
+        updateClickCounters();
+        
+        if (nameInput.value.trim() === '' || textInput.value.trim() === '') {
+            alert("Пожалуйста, заполните все поля");
+            return;
+        }
+        
+        const newComment = {
+            author: nameInput.value,
+            date: formatDate(),
+            text: textInput.value,
+            likes: 0,
+            isLiked: false,
+        };
+        
+        comments.push(newComment);
+        console.log("Добавлен новый комментарий:", newComment);
+        
+        nameInput.value = '';
+        textInput.value = '';
+        
+        renderComments();
+    });
+    
+    renderComments();
+</script>
 </html>
