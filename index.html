@@ -63,45 +63,119 @@
 
   <script>
     "use strict";
-    
+
     const commentsList = document.querySelector(".comments");
     const nameInput = document.querySelector(".add-form-name");
     const textInput = document.querySelector(".add-form-text");
     const addButton = document.querySelector(".add-form-button");
-    
-    let comments = [
-      {
-        author: "Глеб Фокин",
-        date: "12.02.22 12:18",
-        text: "Это будет первый комментарий на этой странице",
-        likes: 3,
-        isLiked: false,
-      },
-      {
-        author: "Варвара Н.",
-        date: "13.02.22 19:22",
-        text: "Мне нравится как оформлена эта страница! ❤",
-        likes: 75,
-        isLiked: true,
-      },
-    ];
-    
+
+    const API_URL = "https://wedev-api.sky.pro/api/v1/ivan-ivanov/comments"; // Замените на ваш personal-key
+    let comments = [];
+    let isLoading = false;
     let nameClickCount = 0;
     let textClickCount = 0;
     let buttonClickCount = 0;
     let likeClickCount = 0;
     let replyingTo = null;
-    
-    function formatDate() {
-      const now = new Date();
-      return `${now.getDate().toString().padStart(2, "0")}.${(now.getMonth() + 1)
-        .toString()
-        .padStart(2, "0")}.${now.getFullYear().toString().slice(-2)} ${now
-        .getHours()
-        .toString()
-        .padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
+
+    async function fetchComments() {
+      try {
+        isLoading = true;
+        const response = await fetch(API_URL);
+        if (!response.ok) {
+          throw new Error("Ошибка при загрузке комментариев");
+        }
+        const data = await response.json();
+        comments = data.comments.map((comment) => ({
+          author: comment.author.name,
+          date: new Date(comment.date),
+          text: comment.text,
+          likes: comment.likes,
+          isLiked: comment.isLiked,
+          id: comment.id,
+        }));
+        renderComments();
+      } catch (error) {
+        console.error("Ошибка:", error);
+        alert("Не удалось загрузить комментарии. Попробуйте позже.");
+      } finally {
+        isLoading = false;
+      }
     }
-    
+
+    async function postComment() {
+      const author = nameInput.value.trim();
+      const text = textInput.value.trim();
+
+      if (author === "" || text === "") {
+        alert("Пожалуйста, заполните все поля");
+        return;
+      }
+
+      if (author.length < 3 || text.length < 3) {
+        alert("Имя и комментарий должны содержать минимум 3 символа");
+        return;
+      }
+
+      try {
+        isLoading = true;
+        const response = await fetch(API_URL, {
+          method: "POST",
+          body: JSON.stringify({
+            text: text,
+            name: author,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Ошибка при отправке комментария");
+        }
+
+        await fetchComments();
+        nameInput.value = "";
+        textInput.value = "";
+        replyingTo = null;
+      } catch (error) {
+        console.error("Ошибка:", error);
+        alert(error.message);
+      } finally {
+        isLoading = false;
+      }
+    }
+
+    function formatDate(date) {
+      const now = new Date();
+      const diffInSeconds = Math.floor((now - date) / 1000);
+
+      if (diffInSeconds < 60) {
+        return `${diffInSeconds} секунд назад`;
+      }
+
+      const diffInMinutes = Math.floor(diffInSeconds / 60);
+      if (diffInMinutes < 60) {
+        return `${diffInMinutes} минут назад`;
+      }
+
+      const diffInHours = Math.floor(diffInMinutes / 60);
+      if (diffInHours < 24) {
+        return `${diffInHours} часов назад`;
+      }
+
+      const diffInDays = Math.floor(diffInHours / 24);
+      if (diffInDays < 7) {
+        return `${diffInDays} дней назад`;
+      }
+
+      return date.toLocaleString("ru-RU", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    }
+
     function escapeHTML(str) {
       return str
         .replaceAll("&", "&amp;")
@@ -109,40 +183,46 @@
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#039;");
     }
-    
+
     function renderComments() {
       commentsList.innerHTML = "";
-    
+
       comments.forEach((comment, index) => {
         const commentHTML = `
-          <li class="comment" data-index="${index}">
-            <div class="comment-header">
-              <div>${escapeHTML(comment.author)}</div>
-              <div>${comment.date}</div>
-            </div>
-            <div class="comment-body">
-              <div class="comment-text">
-                ${escapeHTML(comment.text).replace(/\n/g, "<br>")}
-                ${comment.replyTo ? `<div class="reply-to">Ответ на комментарий ${escapeHTML(comment.replyTo)}</div>` : ''}
-              </div>
-            </div>
-            <div class="comment-footer">
-              <div class="likes">
-                <span class="likes-counter">${comment.likes}</span>
-                <button class="like-button ${
-                  comment.isLiked ? "-active-like" : ""
-                }" data-index="${index}"></button>
-              </div>
-            </div>
-          </li>
-        `;
+      <li class="comment" data-index="${index}">
+        <div class="comment-header">
+          <div>${escapeHTML(comment.author)}</div>
+          <div>${formatDate(comment.date)}</div>
+        </div>
+        <div class="comment-body">
+          <div class="comment-text">
+            ${escapeHTML(comment.text).replace(/\n/g, "<br>")}
+            ${
+              comment.replyTo
+                ? `<div class="reply-to">Ответ на комментарий ${escapeHTML(
+                    comment.replyTo
+                  )}</div>`
+                : ""
+            }
+          </div>
+        </div>
+        <div class="comment-footer">
+          <div class="likes">
+            <span class="likes-counter">${comment.likes}</span>
+            <button class="like-button ${
+              comment.isLiked ? "-active-like" : ""
+            }" data-index="${index}"></button>
+          </div>
+        </div>
+      </li>
+    `;
         commentsList.insertAdjacentHTML("beforeend", commentHTML);
       });
-    
+
       setupLikeHandlers();
       setupCommentClickHandlers();
     }
-    
+
     function setupLikeHandlers() {
       document.querySelectorAll(".like-button").forEach((button) => {
         button.addEventListener("click", function (event) {
@@ -150,7 +230,7 @@
           const index = this.getAttribute("data-index");
           likeClickCount++;
           updateClickCounters();
-    
+
           if (comments[index].isLiked) {
             comments[index].likes--;
             comments[index].isLiked = false;
@@ -162,73 +242,49 @@
         });
       });
     }
-    
+
     function setupCommentClickHandlers() {
       document.querySelectorAll(".comment").forEach((commentEl) => {
         commentEl.addEventListener("click", function (event) {
           if (event.target.closest(".like-button")) {
             return;
           }
-    
+
           const index = this.getAttribute("data-index");
-          replyingTo = comments[index].author; 
-          
-        
+          replyingTo = comments[index].author;
+
           textInput.value = `${comments[index].text}\n\n`;
           textInput.focus();
         });
       });
     }
-    
+
     function updateClickCounters() {
       console.log(`Статистика кликов:
-        Поле "Имя": ${nameClickCount}
-        Поле "Комментарий": ${textClickCount}
-        Кнопка "Написать": ${buttonClickCount}
-        Лайки: ${likeClickCount}`);
+    Поле "Имя": ${nameClickCount}
+    Поле "Комментарий": ${textClickCount}
+    Кнопка "Написать": ${buttonClickCount}
+    Лайки: ${likeClickCount}`);
     }
-    
+
     nameInput.addEventListener("click", function () {
       nameClickCount++;
       updateClickCounters();
     });
-    
+
     textInput.addEventListener("click", function () {
       textClickCount++;
       updateClickCounters();
     });
-    
+
     addButton.addEventListener("click", function () {
       buttonClickCount++;
       updateClickCounters();
-    
-      const author = nameInput.value.trim();
-      const text = textInput.value.trim();
-    
-      if (author === "" || text === "") {
-        alert("Пожалуйста, заполните все поля");
-        return;
+
+      if (!isLoading) {
+        postComment();
       }
-    
-      const newComment = {
-        author: escapeHTML(author), 
-        date: formatDate(),
-        text: escapeHTML(text),
-        likes: 0,
-        isLiked: false,
-        replyTo: replyingTo 
-      };
-    
-      comments.push(newComment);
-      console.log("Добавлен новый комментарий:", newComment);
-    
-      nameInput.value = "";
-      textInput.value = "";
-      replyingTo = null;
-    // 10 проверка 
-      renderComments();
     });
-    
-    renderComments();
-    </script>
+    fetchComments();
+  </script>
 </html>
