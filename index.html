@@ -9,23 +9,6 @@
   <body>
     <div class="container">
       <ul class="comments">
-        <li class="comment">
-          <div class="comment-header">
-            <div>Глеб Фокин</div>
-            <div>12.02.22 12:18</div>
-          </div>
-          <div class="comment-body">
-            <div class="comment-text">
-              Это будет первый комментарий на этой странице
-            </div>
-          </div>
-          <div class="comment-footer">
-            <div class="likes">
-              <span class="likes-counter">3</span>
-              <button class="like-button"></button>
-            </div>
-          </div>
-        </li>
       </ul>
       <div class="add-form">
         <input
@@ -51,14 +34,9 @@
     const textInput = document.querySelector(".add-form-text");
     const addButton = document.querySelector(".add-form-button");
 
-    const API_URL = "https://wedev-api.sky.pro/api/v1/ivan-ivanov/comments"; // Замените на ваш personal-key
+    const API_URL = "https://wedev-api.sky.pro/api/v1/ivan-ivanov/comments";
     let comments = [];
     let isLoading = false;
-    let nameClickCount = 0;
-    let textClickCount = 0;
-    let buttonClickCount = 0;
-    let likeClickCount = 0;
-    let replyingTo = null;
 
     async function fetchComments() {
       try {
@@ -117,7 +95,6 @@
         await fetchComments();
         nameInput.value = "";
         textInput.value = "";
-        replyingTo = null;
       } catch (error) {
         console.error("Ошибка:", error);
         alert(error.message);
@@ -157,13 +134,6 @@
         <div class="comment-body">
           <div class="comment-text">
             ${escapeHTML(comment.text).replace(/\n/g, "<br>")}
-            ${
-              comment.replyTo
-                ? `<div class="reply-to">Ответ на комментарий ${escapeHTML(
-                    comment.replyTo
-                  )}</div>`
-                : ""
-            }
           </div>
         </div>
         <div class="comment-footer">
@@ -180,7 +150,6 @@
       });
 
       setupLikeHandlers();
-      setupCommentClickHandlers();
     }
 
     function setupLikeHandlers() {
@@ -188,8 +157,6 @@
         button.addEventListener("click", function (event) {
           event.stopPropagation();
           const index = this.getAttribute("data-index");
-          likeClickCount++;
-          updateClickCounters();
 
           if (comments[index].isLiked) {
             comments[index].likes--;
@@ -203,48 +170,12 @@
       });
     }
 
-    function setupCommentClickHandlers() {
-      document.querySelectorAll(".comment").forEach((commentEl) => {
-        commentEl.addEventListener("click", function (event) {
-          if (event.target.closest(".like-button")) {
-            return;
-          }
-
-          const index = this.getAttribute("data-index");
-          replyingTo = comments[index].author;
-
-          textInput.value = `${comments[index].text}\n\n`;
-          textInput.focus();
-        });
-      });
-    }
-
-    function updateClickCounters() {
-      console.log(`Статистика кликов:
-    Поле "Имя": ${nameClickCount}
-    Поле "Комментарий": ${textClickCount}
-    Кнопка "Написать": ${buttonClickCount}
-    Лайки: ${likeClickCount}`);
-    }
-
-    nameInput.addEventListener("click", function () {
-      nameClickCount++;
-      updateClickCounters();
-    });
-
-    textInput.addEventListener("click", function () {
-      textClickCount++;
-      updateClickCounters();
-    });
-
     addButton.addEventListener("click", function () {
-      buttonClickCount++;
-      updateClickCounters();
-
       if (!isLoading) {
         postComment();
       }
     });
+    
     fetchComments();
   </script>
 </html>
