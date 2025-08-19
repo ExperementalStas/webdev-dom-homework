@@ -104,7 +104,7 @@
           throw new Error(errorData.error || "Ошибка при отправке комментария");
         }
 
-        await fetchComments(); 
+        await fetchComments();
         nameInput.value = "";
         textInput.value = "";
       } catch (error) {
@@ -194,19 +194,43 @@
 
     function setupLikeHandlers() {
       document.querySelectorAll(".like-button").forEach((button) => {
-        button.addEventListener("click", function (event) {
+        button.addEventListener("click", async function (event) {
           event.stopPropagation();
-          const index = this.getAttribute("data-index");
 
-          if (comments[index].isLiked) {
-            comments[index].likes--;
-            comments[index].isLiked = false;
-          } else {
-            comments[index].likes++;
-            comments[index].isLiked = true;
+          const index = this.getAttribute("data-index");
+          const comment = comments[index];
+
+          if (button.classList.contains("-loading-like")) {
+            return;
           }
-          renderComments();
+
+          button.classList.add("-loading-like");
+
+          try {
+            await delay(1000);
+
+            if (comment.isLiked) {
+              comment.likes--;
+            } else {
+              comment.likes++;
+            }
+            comment.isLiked = !comment.isLiked;
+
+            renderComments();
+          } catch (error) {
+            console.error("Ошибка при установке лайка:", error);
+            alert("Не удалось поставить лайк. Попробуйте позже.");
+            renderComments();
+          }
         });
+      });
+    }
+
+    function delay(interval = 300) {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve();
+        }, interval);
       });
     }
 
