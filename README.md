@@ -1,6 +1,6 @@
 # Проект "Комментарии"
 
-https://olgap15.github.io/webdev-dom1-homework/
+https://github.com/ExperementalStas/webdev-dom-homework
 
 Верстка для учебного проекта студентов Skypro
 
